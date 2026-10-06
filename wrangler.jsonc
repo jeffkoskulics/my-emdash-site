@@ -10,6 +10,14 @@
 			"database_name": "my-emdash-site","database_id": "444ce970-02ff-4d07-8cfe-cf44b53ab052",
 		},
 	],
+	// Login sessions. Must be listed with its ID: `wrangler preview` (used for
+	// PR preview builds) can't auto-provision it the way `wrangler deploy` does.
+	"kv_namespaces": [
+		{
+			"binding": "SESSION",
+			"id": "3abbd86c4d6c448980bb39ecb90ddfbf",
+		},
+	],
 	"r2_buckets": [
 		{
 			"binding": "MEDIA",
