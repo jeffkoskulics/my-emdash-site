@@ -6,16 +6,16 @@ export { PluginBridge };
  * The public site lives under /blog (jeff.koskulics.com/blog), but EmDash and
  * the template assume they are served from "/". Requests under /blog are
  * served with the prefix stripped, and root-relative links in HTML and
- * redirects are rewritten back under /blog. The admin (/_emdash) and build
- * assets (/_astro) stay at the root, so the Worker must own the whole host.
+ * redirects are rewritten back under /blog. That includes the admin and API
+ * (/_emdash) and build assets (/_astro): the Worker is only routed for /blog/*,
+ * so anything left pointing at the root never reaches it.
  */
 const BASE = "/blog";
-const ROOT_PATHS = ["/_emdash", "/_astro", "/_image", "/_server-islands"];
+const ROOT_PATH = /(["'`(,\s])(https?:\/\/[^/"'`\s]+)?\/(_astro|_emdash|_image|_server-islands)\b/g;
 
 function addBase(url: string): string {
 	if (!url.startsWith("/") || url.startsWith("//")) return url;
 	if (url === BASE || url.startsWith(`${BASE}/`) || url.startsWith(`${BASE}?`)) return url;
-	if (ROOT_PATHS.some((p) => url === p || url.startsWith(`${p}/`) || url.startsWith(`${p}?`))) return url;
 	return url === "/" ? `${BASE}/` : BASE + url;
 }
 
@@ -55,15 +55,28 @@ const fetch: ExportedHandlerFetchHandler<Env> = async (request, env, ctx) => {
 		}
 	}
 
-	if (!isBlog || !response.headers.get("Content-Type")?.includes("text/html")) {
+	const type = response.headers.get("Content-Type") ?? "";
+	if (!isBlog || !/text\/html|text\/css|javascript/.test(type)) {
 		return response;
 	}
 
-	return new HTMLRewriter()
-		.on("a[href]", new PrefixAttr("href"))
-		.on("link[href]", new PrefixAttr("href"))
-		.on("form[action]", new PrefixAttr("action"))
-		.transform(response);
+	const rewritten = type.includes("text/html")
+		? new HTMLRewriter()
+				.on("a[href]", new PrefixAttr("href"))
+				.on("link[href]", new PrefixAttr("href"))
+				.on("form[action]", new PrefixAttr("action"))
+				.transform(response)
+		: response;
+
+	// Catch what the attribute rewriter can't: inline @font-face urls, srcsets,
+	// absolute same-origin image URLs, data-endpoint, and paths hardcoded in JS.
+	const body = (await rewritten.text()).replace(ROOT_PATH, (match, pre, origin, dir) =>
+		!origin || origin === url.origin ? `${pre}${BASE}/${dir}` : match,
+	);
+	const headers = new Headers(rewritten.headers);
+	headers.delete("Content-Length");
+	headers.delete("ETag");
+	return new Response(body, { status: rewritten.status, statusText: rewritten.statusText, headers });
 };
 
 export default {
