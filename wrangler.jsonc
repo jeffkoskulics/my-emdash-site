@@ -18,6 +18,15 @@
 			"id": "3abbd86c4d6c448980bb39ecb90ddfbf",
 		},
 	],
+	// Preview builds don't inherit KV bindings, so repeat it for previews.
+	"previews": {
+		"kv_namespaces": [
+			{
+				"binding": "SESSION",
+				"id": "3abbd86c4d6c448980bb39ecb90ddfbf",
+			},
+		],
+	},
 	"r2_buckets": [
 		{
 			"binding": "MEDIA",
