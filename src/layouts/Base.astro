@@ -80,6 +80,8 @@ const pageCtx = createPublicPageContext({
 
 // Check if user is logged in (for showing admin link)
 const isLoggedIn = !!Astro.locals.user;
+// Logged-in views include the admin link, so never cache them for the public.
+if (isLoggedIn && Astro.cache?.enabled) Astro.cache.set(false);
 ---
 
 <!doctype html>
