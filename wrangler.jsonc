@@ -18,8 +18,9 @@
 	],
 	// Sandboxed plugins require Worker Loader, available on Workers paid plans. Uncomment to enable:
 	// "worker_loaders": [{ "binding": "LOADER" }],
-	// General maintenance cron trigger
+	// General maintenance cron trigger (also publishes scheduled posts). Hourly
+	// keeps it well inside the free plan; every minute was 1,440 runs a day.
 	"triggers": {
-		"crons": ["* * * * *"],
+		"crons": ["0 * * * *"],
 	},
 }
